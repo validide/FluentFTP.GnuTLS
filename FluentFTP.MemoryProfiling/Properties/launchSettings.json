@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "FluentFTP.MemoryProfiling": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
