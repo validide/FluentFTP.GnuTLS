@@ -36,29 +36,75 @@ static void ConfigureConnection(BaseFtpClient conn) {
 	conn.Config.EncryptionMode = FtpEncryptionMode.Explicit;
 }
 
-static async Task SimulateWork(int target) {
+static async Task SimulateWorkAsync(int target) {
 	var count = 0;
 	while (count < target) {
-		using (var conn = new FtpClient("ftp-server", "ftptest", "ftptest")) {
+		await using (var conn = new AsyncFtpClient("ftp-server", "ftptest", "ftptest")) {
 			ConfigureConnection(conn);
 
 			await Task.Delay(100);
 
 			try {
-				conn.Connect();
+				await conn.Connect();
 			}
-			catch (Exception ex) {
-				Console.WriteLine(ex.ToString());
+			catch /*(Exception ex)*/ {
+				// Console.WriteLine(ex.ToString());
 			}
 		}
 		count++;
-		Console.WriteLine($"Created {count} clients.");
+		if (count % 100 == 0) {
+			Console.WriteLine($"Created {count} async clients.");
+		}
 	}
 }
 
-const int targetCount = 1_000;
+static void SimulateWorkSync(int target) {
+	var count = 0;
+	while (count < target) {
+		using (var conn = new FtpClient("ftp-server", "ftptest", "ftptest")) {
+			ConfigureConnection(conn);
+
+			Thread.Sleep(100);
+
+			try {
+				conn.Connect();
+			}
+			catch /*(Exception ex)*/ {
+				// Console.WriteLine(ex.ToString());
+			}
+		}
+		count++;
+		if (count % 100 == 0) {
+			Console.WriteLine($"Created {count} sync clients.");
+		}
+		
+	}
+}
+
+static void CollectAndPrint(string stage) {
+	var memMB = System.Diagnostics.Process.GetCurrentProcess().WorkingSet64 / (1024 * 1024);
+	Console.WriteLine("======================================================");
+	Console.WriteLine($"{stage} memory usage before GC: {memMB} MB");
+	GC.Collect();
+	GC.WaitForPendingFinalizers();
+	GC.Collect();
+	memMB = System.Diagnostics.Process.GetCurrentProcess().WorkingSet64 / (1024 * 1024);
+	Console.WriteLine($"{stage} memory usage after GC: {memMB} MB");
+	Console.WriteLine("======================================================");
+}
+
+const int targetCount = 500;
 Console.WriteLine("Starting to create clients!");
-await SimulateWork(targetCount);
+
+CollectAndPrint("BEFORE_SYNC");
+SimulateWorkSync(targetCount);
+CollectAndPrint("AFTER_SYNC");
+
+await Task.Delay(TimeSpan.FromMinutes(1));
+
+CollectAndPrint("BEFORE_ASYNC");
+await SimulateWorkAsync(targetCount);
+CollectAndPrint("AFTER_ASYNC");
 
 Console.WriteLine("Finished Creating clients. Sleeping for 60 minutes before closing");
 await Task.Delay(TimeSpan.FromMinutes(60));
