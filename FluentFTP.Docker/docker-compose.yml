@@ -16,15 +16,17 @@ services:
     #   PASV_MAX_PORT: 21110
     image: bfren/ftps
     platform: linux/amd64
-    # ports:
-    #   - "21:21"
-    #   - "21100-21110:21100-21110"
+    ports:
+      - "21:21"
+      - "990:990"
+      - "18700-18710:18700-18710"
     # volumes:
     #   - /Users/your_username/Documents/ftp:/home/vsftpd
     environment:
       BF_FTPS_VSFTPD_USER: ftptest
       BF_FTPS_VSFTPD_PASS: ftptest
-      BF_FTPS_EXTERNAL_URI: ftp-server
+      #BF_FTPS_EXTERNAL_URI: ftp-server
+      BF_FTPS_EXTERNAL_IP: '127.0.0.1'
     restart: unless-stopped
 
   fluentftp.memoryprofiling:
@@ -34,3 +36,4 @@ services:
       dockerfile: FluentFTP.MemoryProfiling/Dockerfile
     depends_on:
       - ftp-server
+    network_mode: host

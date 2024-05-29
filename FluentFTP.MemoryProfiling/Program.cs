@@ -3,6 +3,13 @@ using FluentFTP.Client.BaseClient;
 using FluentFTP.GnuTLS;
 using FluentFTP.GnuTLS.Enums;
 
+const string serverAddress = "127.0.0.1";
+const string serverUser = "ftptest";
+const string serverPass = "ftptest";
+
+
+const int sleepMilliseconds = 1_000;
+
 static void ConfigureConnection(BaseFtpClient conn) {
 	// enable GnuTLS streams for FTP client
 	conn.Config.CustomStream = typeof(GnuTlsStream);
@@ -14,9 +21,7 @@ static void ConfigureConnection(BaseFtpClient conn) {
 
 		//// sample setting to include all TLS protocols except for TLS 1.0 and TLS 1.1
 		SecurityOptions = [
-						new GnuOption(GnuOperator.Include, GnuCommand.Protocol_All),
-						new GnuOption(GnuOperator.Exclude, GnuCommand.Protocol_Tls10),
-						new GnuOption(GnuOperator.Exclude, GnuCommand.Protocol_Tls11),
+						new GnuOption(GnuOperator.Include, GnuCommand.Protocol_All)
 					],
 
 		// no profile required
@@ -32,23 +37,32 @@ static void ConfigureConnection(BaseFtpClient conn) {
 
 
 	// connect using Explicit FTPS with TLS 1.3
-	conn.Config.ValidateAnyCertificate = true;
+	conn.Config.ValidateAnyCertificate = false;
+	conn.Config.ValidateCertificateRevocation = false;
 	conn.Config.EncryptionMode = FtpEncryptionMode.Explicit;
+	conn.Config.LogToConsole = true;
+}
+
+static bool OnError(Exception ex) {
+	Console.WriteLine(ex.ToString());
+	return true;
 }
 
 static async Task SimulateWorkAsync(int target) {
 	var count = 0;
 	while (count < target) {
-		await using (var conn = new AsyncFtpClient("ftp-server", "ftptest", "ftptest")) {
+		await using (var conn = new AsyncFtpClient(serverAddress, serverUser, serverPass)) {
 			ConfigureConnection(conn);
 
-			await Task.Delay(100);
+			await Task.Delay(sleepMilliseconds);
 
 			try {
 				await conn.Connect();
 			}
-			catch /*(Exception ex)*/ {
-				// Console.WriteLine(ex.ToString());
+			catch (Exception ex) {
+				if (OnError(ex)) {
+					throw;
+				}
 			}
 		}
 		count++;
@@ -61,16 +75,18 @@ static async Task SimulateWorkAsync(int target) {
 static void SimulateWorkSync(int target) {
 	var count = 0;
 	while (count < target) {
-		using (var conn = new FtpClient("ftp-server", "ftptest", "ftptest")) {
+		using (var conn = new FtpClient(serverAddress, serverUser, serverPass)) {
 			ConfigureConnection(conn);
 
-			Thread.Sleep(100);
+			Thread.Sleep(sleepMilliseconds);
 
 			try {
 				conn.Connect();
 			}
-			catch /*(Exception ex)*/ {
-				// Console.WriteLine(ex.ToString());
+			catch (Exception ex) {
+				if (OnError(ex)) {
+					throw;
+				}
 			}
 		}
 		count++;
