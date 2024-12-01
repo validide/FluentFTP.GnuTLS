@@ -41,7 +41,7 @@ namespace FluentFTP.GnuTLS {
 			// Tell GnuTLS how to send and receive: Use already open socket
 			// Need to check for connectivity on this socket, cannot just blithely use it
 			if (!SocketUsable(socket, ptimeout, out string reason)) {
-				throw new GnuTlsException("Socket is unusable " + reason);
+				throw new GnuTlsException("Socket is unusable: " + reason);
 			}
 
 			//Both of these **should** be equivalent:
@@ -55,25 +55,25 @@ namespace FluentFTP.GnuTLS {
 
 		private static bool SocketUsable(Socket sock, int ptmo, out string rsn) {
 
-				if (sock == null) {
-					rsn = "sock == null";
-					return false;
-				}
+			if (sock == null) {
+				rsn = "sock == null";
+				return false;
+			}
 
-				if (sock.Handle == IntPtr.Zero) {
-					rsn = "sock handle == zero";
-					return false;
-				}
+			if (sock.Handle == IntPtr.Zero) {
+				rsn = "sock handle == zero";
+				return false;
+			}
 
-				if (!sock.Connected) {
-					rsn = "sock !connected";
-					return false;
-				}
+			if (!sock.Connected) {
+				rsn = "sock !connected";
+				return false;
+			}
 
-				if (ptmo == 0) {
-					rsn = string.Empty;
-					return true;
-				}
+			if (ptmo == 0) {
+				rsn = string.Empty;
+				return true;
+			}
 
 			try {
 				// Poll (SelectRead) returns true if:
